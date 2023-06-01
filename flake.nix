@@ -27,6 +27,8 @@
       default = xpropdate;
     };
 
+    overlays = _: _: { inherit xpropdate; };
+
     apps = rec {
       xpropdate = {type = "app"; program = "${xpropdate}/bin/xpropdate";};
       default = xpropdate;
