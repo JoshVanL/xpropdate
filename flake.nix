@@ -21,17 +21,25 @@
       vendorSha256 = null;
     };
 
+    xpropdateSH = pkgs.writeShellApplication {
+      name = "xpropdate";
+      runtimeInputs = with pkgs; [ xorg.xprop ];
+      text = ''
+        exec ${xpropdate}/bin/xpropdate
+      '';
+    };
+
   in {
     packages = {
       inherit xpropdate;
-      default = xpropdate;
+      default = xpropdateSH;
     };
 
     overlays = _: _: { inherit xpropdate; };
 
     apps = rec {
       xpropdate = {type = "app"; program = "${xpropdate}/bin/xpropdate";};
-      default = xpropdate;
+      default = {type = "app"; program = "${xpropdateSH}/bin/xpropdate";};
     };
   });
 }
