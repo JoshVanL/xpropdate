@@ -11,35 +11,42 @@
     lib = nixpkgs.lib;
     targetSystems = with utils.lib.system; [ x86_64-linux aarch64-linux ];
 
-  in utils.lib.eachSystem targetSystems (system:
-  let
-    pkgs = import nixpkgs { inherit system; };
-
-    bin = pkgs.buildGoModule {
+    bin = pkgs: pkgs.buildGoModule {
       name = "xpropdate";
       src = ./.;
       vendorSha256 = null;
     };
 
-    xpropdate = pkgs.writeShellApplication {
+    xpropdate = pkgs: pkgs.writeShellApplication {
       name = "xpropdate";
       runtimeInputs = with pkgs; [ xorg.xprop ];
       text = ''
-        exec ${bin}/bin/xpropdate
+        exec ${bin pkgs}/bin/xpropdate
       '';
     };
 
-  in {
-    packages = {
-      xpropdate = bin;
-      default = xpropdate;
+    overlay = final: prev: {
+      xpropdate = xpropdate prev;
     };
 
-    overlays = _: _: { inherit xpropdate; };
+  in utils.lib.eachSystem targetSystems (system:
+  let
+    pkgs = import nixpkgs { inherit system; };
+
+  in rec {
+    packages = {
+      xpropdate = (bin pkgs);
+      default = (xpropdate pkgs);
+    };
 
     apps = {
-      xpropdate = {type = "app"; program = "${bin}/bin/xpropdate";};
-      default = {type = "app"; program = "${xpropdate}/bin/xpropdate";};
+      xpropdate = {type = "app"; program = "${packages.xpropdate}/bin/xpropdate";};
+      default = {type = "app"; program = "${packages.xpropdate}/bin/xpropdate";};
     };
-  });
+  }) // rec {
+    overlays.default = overlay;
+    nixosModules.default = {
+      nixpkgs.overlays = [ overlays.default ];
+    };
+  };
 }
