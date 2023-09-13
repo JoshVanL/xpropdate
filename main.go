@@ -17,20 +17,32 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
 
+	// Used to ensure we update the time at least once a minute to cover cases
+	// like waking from sleep where the underlying ticker may be out of whack
+	// with the system time.
+	fallbackTicker := time.NewTicker(time.Second * 60)
+	defer fallbackTicker.Stop()
+
 	for {
 		now := time.Now().Local()
 
-		xprop(ctx, fmt.Sprintf("%d/%.2d/%.2d %.2d:%.2d",
-			now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(),
+		xprop(ctx, fmt.Sprintf("%s %d/%.2d/%.2d %.2d:%.2d",
+			now.Weekday(), now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(),
 		))
 
 		uni := now.Unix()
 		nextMin := time.Unix((uni-uni%60)+60, 0)
+		nextMinTicker := time.NewTimer(nextMin.Sub(now))
 		select {
 		case <-ctx.Done():
 			xprop(context.Background(), "X")
 			return
-		case <-time.Tick(time.Until(nextMin)):
+		case <-nextMinTicker.C:
+		case <-fallbackTicker.C:
+		}
+
+		if !nextMinTicker.Stop() {
+			<-nextMinTicker.C
 		}
 	}
 }
