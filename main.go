@@ -32,7 +32,7 @@ func main() {
 
 		uni := now.Unix()
 		nextMin := time.Unix((uni-uni%60)+60, 0)
-		nextMinTicker := time.NewTimer(nextMin.Sub(now))
+		nextMinTicker := time.NewTicker(nextMin.Sub(now))
 		select {
 		case <-ctx.Done():
 			xprop(context.Background(), "X")
@@ -41,9 +41,7 @@ func main() {
 		case <-fallbackTicker.C:
 		}
 
-		if !nextMinTicker.Stop() {
-			<-nextMinTicker.C
-		}
+		nextMinTicker.Stop()
 	}
 }
 
