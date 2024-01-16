@@ -14,7 +14,7 @@
     bin = pkgs: pkgs.buildGoModule {
       name = "xpropdate";
       src = ./.;
-      vendorSha256 = null;
+      vendorHash = null;
     };
 
     xpropdate = pkgs: pkgs.writeShellApplication {
